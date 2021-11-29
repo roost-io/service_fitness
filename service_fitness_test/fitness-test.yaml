@@ -1,0 +1,98 @@
+config:
+  target: "http://10.10.0.10:32408"
+  http:
+    # Responses have to be sent within 10 seconds, or an `ETIMEDOUT` error gets raised.
+    # timeout: 10
+  environments:
+    production:
+      target: "http://10.10.0.10:32408"
+      phases:
+        - duration: 15
+          arrivalRate: 5
+    unit:
+      target: "http://10.10.0.10:32408"
+      phases:
+        - duration: 20
+          arrivalRate: 5
+  phases:
+    - duration: 20
+      arrivalRate: 5
+      name: Warm up
+  payload:
+    path: "product.csv"
+    fields:
+      - "product"
+  plugins:
+    expect: 
+      outputFormat: silent
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+    
+scenarios:
+  - name: "Get Front Page"
+    flow:
+      - get:
+         url: "/"
+         name: "getFrontPage"
+         expect: 
+           - statusCode: 200
+           
+  - name: "Get Product"
+    flow:
+      - get:
+          url: "/product/{{product}}"
+          name: getProductRequest
+          expect:
+            - statusCode: 200
+  
+  - name: "Get Cart"
+    flow:
+      - get:
+          url: "/cart"
+          name: getCart
+          expect:
+            - statusCode: 200
+  
+  - name: "Add Items to cart"
+    flow:
+      - post:
+          url: "/cart"
+          name: addItemsToCart
+          form:
+            product_id: "{{product}}"
+            quantity: 1
+          expect:
+            - statusCode: 302
+      - get:
+          url: "/cart"
+          name: getCart
+          expect:
+            - statusCode: 200
+  
+  - name: "Checkout"
+    flow:
+      -post:
+        url: "/cart/checkout"
+        name: checkoutCart
+        form:
+          email: someone@example.com
+          street_address: 1600 Amphitheatre Parkway
+          zip_code: 94043
+          city: Mountain View
+          state: CA
+          country: United States
+          credit_card_number: 4432-8015-6152-0454
+          credit_card_expiration_month: 1
+          credit_card_expiration_year: 2022
+          credit_card_cvv: 672
+        expect:
+          - statusCode: 302
+  # 
+  - name: "Empty Cart"
+    flow:
+     -post:
+       url: "/cart/empty"
+       name: "emptyCart"
+       expect:
+         statusCode: 302
+
