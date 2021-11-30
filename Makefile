@@ -1,6 +1,6 @@
 # HOSTNAME := $(shell hostname)
 .PHONY: all
-all: dockerise deploy
+all: clean deploy
 
 .PHONY: test
 test: test-art test-cypress
